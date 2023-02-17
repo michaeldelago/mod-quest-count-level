@@ -1,0 +1,50 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+########################################
+# QuestCountLevel configuration
+########################################
+#
+#    QuestCountLevel.Enabled
+#        Description: Enable Quest Count level
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+QuestCountLevel.Enabled = 1
+
+#
+#    QuestCountLevel.Announce
+#        Description: Announce the module at login
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+QuestCountLevel.Announce = 1
+
+
+#
+#    QuestCountLevel.QuestCount
+#        Description: Number of quest it takes to level up
+#        Default:     20
+#
+QuestCountLevel.QuestCount = 20
+
+
+#
+#    QuestCountLevel.ItemID
+#        Description: Item provided to player when they reach QuestCount 
+#        Default:     701001 
+#
+QuestCountLevel.ItemID = 701001
+
+
+#
+#    QuestCountLevel.MinimumLevel
+#        Description: Minimum Level for a player to use Quest Count Leveling 
+#        Default:     10 
+#
+QuestCountLevel.ItemID = 10

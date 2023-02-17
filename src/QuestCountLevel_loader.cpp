@@ -3,13 +3,13 @@
  */
 
 // From SC
-void AddMyPlayerScripts();
+void AddQuest_Count_LevelScripts();
 
 // Add all
 // cf. the naming convention https://github.com/azerothcore/azerothcore-wotlk/blob/master/doc/changelog/master.md#how-to-upgrade-4
 // additionally replace all '-' in the module folder name with '_' here
-void Addskeleton_moduleScripts()
+void Addmod_quest_count_levelScripts()
 {
-    AddMyPlayerScripts();
+     AddQuest_Count_LevelScripts();
 }
 
