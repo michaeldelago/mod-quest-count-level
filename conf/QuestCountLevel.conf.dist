@@ -54,5 +54,5 @@ QuestCountLevel.MinimumLevel = 10
 #        Description: Credit for Dungeon quests 
 #        Default:     3
 #
-QuestCountLevel.MinimumLevel = 3
+QuestCountLevel.DungeonQuestCredit = 3
 
