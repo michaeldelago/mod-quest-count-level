@@ -19,6 +19,7 @@ bool QuestCountLevelAnnounce;
 uint32 DefaultQuestCount;
 uint32 LevelUpItem = 701001;
 uint32 MinimumLevel = 10;
+uint32 DungeonQuestCredit = 3;
 
 class Quest_Count_Level_conf : public WorldScript
 {
@@ -32,6 +33,7 @@ public:
         DefaultQuestCount = sConfigMgr->GetIntDefault("QuestCountLevel.QuestCount", 20);
         LevelUpItem = sConfigMgr->GetIntDefault("QuestCountLevel.ItemID", 701001);
         MinimumLevel = sConfigMgr->GetIntDefault("QuestCountLevel.MinimumLevel", 10);
+        DungeonQuestCredit = sConfigMgr->GetIntDefault("QuestCountLevel.DungeonQuestCredit", 3);
     }
 };
 
@@ -88,7 +90,7 @@ public:
 
   void OnPlayerCompleteQuest(Player* p, Quest const* q) override
   {
-    int32 questLevel = q->GetQuestLevel();
+    int32 questLevel = q->GetMaxLevel();
     uint8 playerLevel = p->GetLevel();
     PlayerQuestCount* playerData = p->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
 
@@ -96,15 +98,25 @@ public:
       return;
     }
 
-    if (questLevel == -1 || (playerLevel <= questLevel + 5)) {
-      playerData->QuestCount--;
+    if (questLevel > 0 && (playerLevel > questLevel)) {
+      return;
+    }
+
+    if (q->GetSuggestedPlayers() > 0) {
+      playerData->QuestCount -= q->GetSuggestedPlayers();
+    } else if (q->IsDFQuest()) {
+      playerData->QuestCount -= DungeonQuestCredit;
+    } else {
+      playerData->QuestCount -= 1;
     }
 
     if (playerData->QuestCount <= 0) {
       p->SendItemRetrievalMail(LevelUpItem, 1);
       ChatHandler(p->GetSession()).SendSysMessage("[QCL] Congratulations on your Level. Your levelup token has been mailed to you.");
-      playerData->QuestCount = DefaultQuestCount;
+      playerData->QuestCount += DefaultQuestCount;
     }
+
+   ChatHandler(p->GetSession()).SendSysMessage("[QCL] You have  %d quests remaining to recieve a levelup token.", playerData->QuestCount);
   }
 
 };

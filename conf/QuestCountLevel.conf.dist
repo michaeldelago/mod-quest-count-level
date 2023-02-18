@@ -47,4 +47,12 @@ QuestCountLevel.ItemID = 701001
 #        Description: Minimum Level for a player to use Quest Count Leveling 
 #        Default:     10 
 #
-QuestCountLevel.ItemID = 10
+QuestCountLevel.MinimumLevel = 10
+
+#
+#    QuestCountLevel.DungeonQuestCredit
+#        Description: Credit for Dungeon quests 
+#        Default:     3
+#
+QuestCountLevel.MinimumLevel = 3
+
