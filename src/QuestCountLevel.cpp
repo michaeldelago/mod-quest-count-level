@@ -16,7 +16,7 @@ using namespace Acore::ChatCommands;
 
 bool QuestCountLevelEnabled;
 bool QuestCountLevelAnnounce;
-uint32 DefaultQuestCount;
+uint32 DefaultQuestCount = 15;
 uint32 LevelUpItem = 701001;
 uint32 MinimumLevel = 10;
 uint32 DungeonQuestCredit = 3;
@@ -30,7 +30,7 @@ public:
     {
         QuestCountLevelAnnounce = sConfigMgr->GetOption<bool>("QuestCountLevel.Announce", 1);
         QuestCountLevelEnabled = sConfigMgr->GetBoolDefault("QuestCountLevel.Enabled", 1);
-        DefaultQuestCount = sConfigMgr->GetIntDefault("QuestCountLevel.QuestCount", 20);
+        DefaultQuestCount = sConfigMgr->GetIntDefault("QuestCountLevel.QuestCount", 15);
         LevelUpItem = sConfigMgr->GetIntDefault("QuestCountLevel.ItemID", 701001);
         MinimumLevel = sConfigMgr->GetIntDefault("QuestCountLevel.MinimumLevel", 10);
         DungeonQuestCredit = sConfigMgr->GetIntDefault("QuestCountLevel.DungeonQuestCredit", 3);

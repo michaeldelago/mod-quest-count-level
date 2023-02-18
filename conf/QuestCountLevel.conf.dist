@@ -29,9 +29,9 @@ QuestCountLevel.Announce = 1
 #
 #    QuestCountLevel.QuestCount
 #        Description: Number of quest it takes to level up
-#        Default:     20
+#        Default:     15
 #
-QuestCountLevel.QuestCount = 20
+QuestCountLevel.QuestCount = 15
 
 
 #
