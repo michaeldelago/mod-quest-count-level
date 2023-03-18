@@ -56,3 +56,9 @@ QuestCountLevel.MinimumLevel = 10
 #
 QuestCountLevel.DungeonQuestCredit = 3
 
+#
+#    QuestCountLevel.AllowRepeatable
+#        Description: Get credit for Repeatable Quests 
+#        Default:     0 - false
+#
+QuestCountLevel.AllowRepeatable = 0

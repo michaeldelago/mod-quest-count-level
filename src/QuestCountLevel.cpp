@@ -1,11 +1,13 @@
 #include "Chat.h"
 #include "Configuration/Config.h"
 #include "DatabaseEnv.h"
+#include "Hyperlinks.h"
 #include "ObjectMgr.h"
 #include "Object.h"
 #include "DataMap.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "SharedDefines.h"
 #include "World.h"
 
 #if AC_COMPILER == AC_COMPILER_GNU
@@ -14,12 +16,15 @@
     
 using namespace Acore::ChatCommands;
 
-bool QuestCountLevelEnabled;
-bool QuestCountLevelAnnounce;
+bool QuestCountLevelEnabled = true;
+bool QuestCountLevelAnnounce = true;
+bool QuestCountLevelAllowRepeatable = false;
 uint32 DefaultQuestCount = 15;
 uint32 LevelUpItem = 701001;
 uint32 MinimumLevel = 10;
 uint32 DungeonQuestCredit = 3;
+
+void savePlayerData(Player* p);
 
 class Quest_Count_Level_conf : public WorldScript
 {
@@ -28,8 +33,9 @@ public:
 
     void OnBeforeConfigLoad(bool /*reload*/) override
     {
-        QuestCountLevelAnnounce = sConfigMgr->GetOption<bool>("QuestCountLevel.Announce", 1);
+        QuestCountLevelAnnounce = sConfigMgr->GetBoolDefault("QuestCountLevel.Announce", 1);
         QuestCountLevelEnabled = sConfigMgr->GetBoolDefault("QuestCountLevel.Enabled", 1);
+        QuestCountLevelAllowRepeatable = sConfigMgr->GetBoolDefault("QuestCountLevel.AllowRepeatable", 0);
         DefaultQuestCount = sConfigMgr->GetIntDefault("QuestCountLevel.QuestCount", 15);
         LevelUpItem = sConfigMgr->GetIntDefault("QuestCountLevel.ItemID", 701001);
         MinimumLevel = sConfigMgr->GetIntDefault("QuestCountLevel.MinimumLevel", 10);
@@ -55,9 +61,13 @@ public:
 class PlayerQuestCount : public DataMap::Base
 {
 public:
+  uint32 QuestCount = DefaultQuestCount;
+  bool PlayerQuestCountEnabled = false;
   PlayerQuestCount() {}
-  PlayerQuestCount(uint32 QuestCount) : QuestCount(QuestCount) {}
-  uint32 QuestCount = 20;
+  PlayerQuestCount(uint32 count, bool enabled) {
+    QuestCount = count;
+    PlayerQuestCountEnabled = enabled;
+  }
 };
 
 class Quest_Count_Level : public PlayerScript
@@ -67,44 +77,49 @@ public:
 
   void OnLogin(Player* p) override
   { 
-    QueryResult result = CharacterDatabase.Query("SELECT `QuestCount` FROM `questcountlevel` WHERE `CharacterGUID` = '{}'", p->GetGUID().GetCounter());
+    QueryResult result = CharacterDatabase.Query("SELECT `QuestCount`,`Enabled` FROM `questcountlevel` WHERE `CharacterGUID` = '{}'", p->GetGUID().GetCounter());
     if (!result)
     {
       p->CustomData.GetDefault<PlayerQuestCount>("Quest_Count_Level")->QuestCount = DefaultQuestCount;
     }
     else {
       Field* fields = result->Fetch();
-      p->CustomData.Set("Quest_Count_Level", new PlayerQuestCount(fields[0].Get<uint32>()));
+      auto playerData = new PlayerQuestCount(fields[0].Get<uint32>(), fields[1].Get<bool>());
+      p->CustomData.Set("Quest_Count_Level", playerData);
     }
   }
 
   void OnLogout(Player* p) override
   {
-    PlayerQuestCount* playerData = p->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
+    savePlayerData(p);
+  }
 
-    if (playerData) {
-      uint32 count = playerData->QuestCount;
-      CharacterDatabase.DirectExecute("REPLACE INTO `questcountlevel` (`CharacterGUID`, `QuestCount`) VALUES ('{}', '{}');", p->GetGUID().GetCounter(), count);
-    }
+  void OnSave(Player* p) override
+  {
+    savePlayerData(p);
   }
 
   void OnPlayerCompleteQuest(Player* p, Quest const* q) override
   {
-    int32 questLevel = q->GetMaxLevel();
+    int32 maxQuestLevel = q->GetMaxLevel();
     uint8 playerLevel = p->GetLevel();
+    uint32 suggestedPlayers = q->GetSuggestedPlayers();
+    bool dungeonQuest = (q->IsDFQuest() || q->GetType() == QUEST_TYPE_DUNGEON);
     PlayerQuestCount* playerData = p->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
 
-    if (!playerData) {
+    if ((!playerData) || // Failed to get playerData
+       (!playerData->PlayerQuestCountEnabled) || // QuestCountLeveling isn't enabled for player
+       (maxQuestLevel > 0 && (playerLevel > maxQuestLevel)) || // Player is overlevelled
+       (QuestCountLevelAllowRepeatable && q->IsRepeatable())) // Quest is repeatable
+    {
       return;
     }
 
-    if (questLevel > 0 && (playerLevel > questLevel)) {
-      return;
-    }
-
-    if (q->GetSuggestedPlayers() > 0) {
+    if (suggestedPlayers > 0) {
+      ChatHandler(p->GetSession()).PSendSysMessage("[QCL] Since this quest is a group quest, you have received credit for %d quests.", suggestedPlayers);
       playerData->QuestCount -= q->GetSuggestedPlayers();
-    } else if (q->IsDFQuest()) {
+    } else if (dungeonQuest) {
+      ChatHandler(p->GetSession()).PSendSysMessage("[QCL] Since this quest is a dungeon quest, you have received credit for %d quests", DungeonQuestCredit);
       playerData->QuestCount -= DungeonQuestCredit;
     } else {
       playerData->QuestCount -= 1;
@@ -112,11 +127,11 @@ public:
 
     if (playerData->QuestCount <= 0) {
       p->SendItemRetrievalMail(LevelUpItem, 1);
-      ChatHandler(p->GetSession()).SendSysMessage("[QCL] Congratulations on your Level. Your levelup token has been mailed to you.");
+      ChatHandler(p->GetSession()).SendSysMessage("[QCL] Congratulations, you've completed enough quests to level up. Your level up token has been mailed to you.");
       playerData->QuestCount += DefaultQuestCount;
     }
 
-   ChatHandler(p->GetSession()).SendSysMessage("[QCL] You have  %d quests remaining to recieve a levelup token.", playerData->QuestCount);
+   ChatHandler(p->GetSession()).PSendSysMessage("[QCL] You have %d quests remaining to recieve a levelup token.", playerData->QuestCount);
   }
 
 };
@@ -147,7 +162,7 @@ public:
     {
         if (!QuestCountLevelEnabled)
         {
-            handler->PSendSysMessage("[QCL] The Individual XP module is not enabled.");
+            handler->PSendSysMessage("[QCL] The Quest Count Level module is not enabled.");
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -172,7 +187,7 @@ public:
             return false;
         }
 
-        uint32 questCount = me->CustomData.Get<PlayerQuestCount>("Quest_Count_Level")->QuestCount;
+        auto playerData = me->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
 
         if (me->GetLevel() < MinimumLevel) {
             handler->PSendSysMessage("[QCL] You have not yet reached the minimum level to use Quest Count Leveling.");
@@ -180,9 +195,9 @@ public:
             return false;
         }
 
-        if (me->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN))
+        if (playerData->PlayerQuestCountEnabled)
         {
-          handler->PSendSysMessage("[QCL] The quests you need to complete until you can level is %d", questCount);
+          handler->PSendSysMessage("[QCL] The quests you need to complete until you can level is %d", playerData->QuestCount);
           handler->SetSentErrorMessage(true);
           return false;
         } else {
@@ -213,8 +228,15 @@ public:
             return false;
         }
 
-        me->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-        me->GetSession()->SendAreaTriggerMessage("You have disabled Quest Count Leveling. You can now gain levels through the standard methods.");
+        PlayerQuestCount* playerData = me->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
+        if (!playerData->PlayerQuestCountEnabled) {
+          handler->PSendSysMessage("[QCL] Quest Count Leveling is not enabled.");
+          handler->SetSentErrorMessage(true);
+          return false;
+        }
+
+        playerData->PlayerQuestCountEnabled = false;
+        handler->PSendSysMessage("[QCL] You have disabled Quest Count Leveling. You can now gain levels through the standard methods.");
         return true;
     }
 
@@ -239,11 +261,34 @@ public:
             return false;
         }
 
-        me->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-        me->GetSession()->SendAreaTriggerMessage("You have enabled Quest Count Leveling. You can now only gain levels through completing a certain number of quests.");
+        PlayerQuestCount* playerData = me->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
+        if (playerData->PlayerQuestCountEnabled) {
+          handler->PSendSysMessage("[QCL] Quest Count Leveling is already enabled.");
+          handler->SetSentErrorMessage(true);
+          return false;
+        }
+
+        playerData->PlayerQuestCountEnabled = true;
+        handler->PSendSysMessage("[QCL] You have enabled Quest Count Leveling. You can now only gain levels through completing a certain number of quests.");
         return true;
     }
 };
+
+
+void savePlayerData(Player* p)
+{
+  PlayerQuestCount* playerData = p->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
+
+  if (playerData && playerData->PlayerQuestCountEnabled) {
+    uint32 count = playerData->QuestCount;
+    bool enabled = playerData->PlayerQuestCountEnabled;
+    CharacterDatabase.DirectExecute(
+        "REPLACE INTO `questcountlevel` (`CharacterGUID`, `QuestCount`, `Enabled`) VALUES ('{}', '{}', '{}');", 
+        p->GetGUID().GetCounter(), 
+        count,
+        int(enabled));
+  }
+}
 
 void AddQuest_Count_LevelScripts()
 {
