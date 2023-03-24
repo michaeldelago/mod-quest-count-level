@@ -244,6 +244,12 @@ class Quest_Count_Level_command : public CommandScript {
       return false;
     }
 
+    if (me->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN))
+    {
+      me->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
+    }
+
+
     playerData->PlayerQuestCountEnabled = false;
     handler->PSendSysMessage(
         "[QCL] You have disabled Quest Count Leveling. You can now gain levels "
@@ -280,6 +286,10 @@ class Quest_Count_Level_command : public CommandScript {
           "[QCL] Quest Count Leveling is already enabled.");
       handler->SetSentErrorMessage(true);
       return false;
+    }
+
+    if (!me->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN)) {
+      me->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
     }
 
     playerData->PlayerQuestCountEnabled = true;
