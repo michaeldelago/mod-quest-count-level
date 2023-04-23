@@ -108,7 +108,7 @@ class Quest_Count_Level : public PlayerScript {
                                                    // enabled for player
         (maxQuestLevel > 0 &&
          (playerLevel > maxQuestLevel)) ||  // Player is overlevelled
-        (QuestCountLevelAllowRepeatable &&
+        (!QuestCountLevelAllowRepeatable &&
          q->IsRepeatable()))  // Quest is repeatable
     {
       return;
