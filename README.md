@@ -1,6 +1,6 @@
 # Quest Count Level
 
-This AzerothCore module allows you to quest *only* through leveling, where a number of quests gives the character an item that levels them up. 
+This AzerothCore module allows you to level *only* through questing, where a number of quests gives the character an item that levels them up. 
 
 The goal is to have a more "smoothed out" questing experience, where each level takes roughly the same amount of time. Additionally, this lets the player stay a certain level and collect level up tokens for as long as they like, as long as the quests are level-appropriate.
 
