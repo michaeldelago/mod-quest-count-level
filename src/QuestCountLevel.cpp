@@ -244,11 +244,7 @@ class Quest_Count_Level_command : public CommandScript {
       return false;
     }
 
-    if (me->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN))
-    {
-      me->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-    }
-
+    me->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
 
     playerData->PlayerQuestCountEnabled = false;
     handler->PSendSysMessage(
@@ -288,9 +284,7 @@ class Quest_Count_Level_command : public CommandScript {
       return false;
     }
 
-    if (!me->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN)) {
-      me->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
-    }
+    me->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN);
 
     playerData->PlayerQuestCountEnabled = true;
     handler->PSendSysMessage(
