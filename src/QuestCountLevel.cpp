@@ -62,10 +62,10 @@ class Quest_Count_Level_Announce : public PlayerScript {
 
 class PlayerQuestCount : public DataMap::Base {
  public:
-  uint32 QuestCount = DefaultQuestCount;
+  int8 QuestCount = DefaultQuestCount;
   bool PlayerQuestCountEnabled = false;
   PlayerQuestCount() {}
-  PlayerQuestCount(uint32 count, bool enabled) {
+  PlayerQuestCount(int8 count, bool enabled) {
     QuestCount = count;
     PlayerQuestCountEnabled = enabled;
   }
@@ -86,7 +86,7 @@ class Quest_Count_Level : public PlayerScript {
     } else {
       Field* fields = result->Fetch();
       auto playerData =
-          new PlayerQuestCount(fields[0].Get<uint32>(), fields[1].Get<bool>());
+          new PlayerQuestCount(fields[0].Get<int8>(), fields[1].Get<bool>());
       p->CustomData.Set("Quest_Count_Level", playerData);
     }
   }
@@ -305,7 +305,7 @@ void savePlayerData(Player* p) {
       p->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
 
   if (playerData && playerData->PlayerQuestCountEnabled) {
-    uint32 count = playerData->QuestCount;
+    int8 count = playerData->QuestCount;
     bool enabled = playerData->PlayerQuestCountEnabled;
     CharacterDatabase.DirectExecute(
         "REPLACE INTO `questcountlevel` (`CharacterGUID`, `QuestCount`, "
