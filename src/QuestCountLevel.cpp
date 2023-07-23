@@ -298,7 +298,7 @@ void savePlayerData(Player* p) {
   PlayerQuestCount* playerData =
       p->CustomData.Get<PlayerQuestCount>("Quest_Count_Level");
 
-  if (playerData && playerData->PlayerQuestCountEnabled) {
+  if (playerData) {
     int8 count = playerData->QuestCount;
     bool enabled = playerData->PlayerQuestCountEnabled;
     CharacterDatabase.DirectExecute(
